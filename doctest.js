@@ -1,8 +1,8 @@
 "use strict";
 
-import readFileSync from "fs";
-import getInput from "@actions/core";
-import parseCodeSnippets from "./parse-code-snippets-from-markdown";
+const readFileSync = require("fs").readFileSync;
+const getInput = require("@actions/core").getInput;
+const parseCodeSnippets = require("./parse-code-snippets-from-markdown").parseCodeSnippets;
 
 function flatten(arr) {
   return Array.prototype.concat.apply([], arr);
