@@ -14,6 +14,7 @@ Just `npm install markdown-doctest` and run `markdown-doctest`. It will run all 
 Let's try it on this repo!
 
 ```c
+#include <assert.h>
 main() {
         assert(1 + 1 == 2);
 }

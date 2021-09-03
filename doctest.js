@@ -1,5 +1,7 @@
 "use strict";
 
+// TODO: automatic detection of c or cpp with defaults for both
+
 const isStartOfSnippet = (line) =>
   line.trim().match(/```\W*(c|cpp|cc)\s?$/i);
 const isEndOfSnippet = (line) => line.trim() === "```";
