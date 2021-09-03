@@ -1,0 +1,21 @@
+name: 'Markdown Doctest'
+description: 'Test C/C++ code from your README/Markdown file'
+inputs:
+  file:
+    description: 'File to operate on'
+    required: true
+    default: 'README.md'
+  compiler:
+    description: 'The compiler to use'
+    required: true
+    default: 'cc'
+  flags:
+    description: 'The flags to give to the compiler'
+    required: true
+    default: '-Wall'
+outputs:
+  time: # id of output
+    description: 'The time we greeted you'
+runs:
+  using: 'node14'
+  main: 'doctest.js'
