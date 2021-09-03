@@ -8,7 +8,7 @@ function flatten(arr) {
   return Array.prototype.concat.apply([], arr);
 }
 
-export function runTests(files, config) {
+function runTests(files, config) {
   const results = files
     .map(read)
     .map(parseCodeSnippets)
@@ -63,7 +63,7 @@ function test(config, filename) {
   };
 }
 
-export function printResults(results) {
+function printResults(results) {
   results.filter((result) => result.status === "fail").forEach(printFailure);
 
   const passingCount = results.filter((result) => result.status === "pass")
