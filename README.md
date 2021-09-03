@@ -15,7 +15,7 @@ Let's try it on this repo!
 
 ```c
 #include <assert.h>
-main() {
+int main() {
         assert(1 + 1 == 2);
 }
 ```
