@@ -77,5 +77,3 @@ function parseCodeSnippets(args) {
     codeSnippets,
   };
 }
-
-export default parseCodeSnippets;
