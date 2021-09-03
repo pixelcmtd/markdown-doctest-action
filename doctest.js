@@ -80,56 +80,46 @@ function parseCodeSnippets(args) {
 
 
 
-const { readFileSync } = require("fs");
+const { readFileSync, writeFileSync } = require("fs");
 const { execSync } = require("child_process");
 const { getInput } = require("@actions/core");
 
-function flatten(arr) {
-  return Array.prototype.concat.apply([], arr);
-}
-
-function runTests(fileName, config) {
-  return flatten(testFile(config)(parseCodeSnippets({ contents: readFileSync(fileName, "utf8"), fileName })));
-}
+const runTests = (fileName, config) => testFile(config)(parseCodeSnippets({ contents: readFileSync(fileName, "utf8"), fileName }));
 
 const testFile = (config) => (args) => args.codeSnippets.map(test(config, args.fileName));
 
-const tempfile = () => "/tmp/doctest" + Math.floor(Math.random() * (2 ** 36)).toString(36);
+const tempfile = () => "/tmp/doctest" + Math.floor(Math.random() * (2 ** 35) + 2 ** 35).toString(36);
 
 function test(config, filename) {
   return (codeSnippet) => {
     let success = false;
     let stack = "";
 
-    let code = codeSnippet.code;
     const codefile = tempfile() + ".cc";
     const binfile = tempfile();
+
+    writeFileSync(codefile, codeSnippet.code);
 
     try {
       execSync(`${config.compiler} ${config.flags} ${codefile} -o ${binfile}`);
       execSync(`${binfile}`);
       success = true;
     } catch (e) {
-      stack = e.stack || "";
+      stack = `${e}\n\n${e.stack}`;
     }
 
     process.stdout.write(success ? "." : "x");
-
     return { status: success ? "pass" : "fail", codeSnippet, stack };
   };
 }
 
 function printResults(results) {
-  results.filter((result) => result.status === "fail").forEach(printFailure);
+  results.filter((res) => res.status === "fail").forEach(printFailure);
 
-  const passingCount = results.filter((result) => result.status === "pass")
-    .length;
-  const failingCount = results.filter((result) => result.status === "fail")
-    .length;
+  const passingCount = results.filter((res) => res.status === "pass").length;
+  const failingCount = results.filter((res) => res.status === "fail").length;
 
-  function successfulRun() {
-    return failingCount === 0;
-  }
+  const successfulRun = () => failingCount === 0;
 
   console.log("Passed: " + passingCount);
 
@@ -142,18 +132,7 @@ function printResults(results) {
 
 function printFailure(result) {
   console.log(`Failed - ${markDownErrorLocation(result)}`);
-  console.log(relevantStackDetails(result.stack));
-}
-
-function relevantStackDetails(stack) {
-  const match = stack.match(/([\w\W]*?)at eval/) ||
-    stack.match(/([\w\W]*)at [\w*\/]*?doctest.js/);
-
-  if (match !== null) {
-    return match[1];
-  }
-
-  return stack;
+  console.log(result.stack);
 }
 
 function markDownErrorLocation(result) {
@@ -175,4 +154,6 @@ const file = getInput("file");
 const compiler = getInput("compiler");
 const flags = getInput("flags");
 
-runTests(file, {compiler, flags});
+const results = runTests(file, {compiler, flags});
+printResults(results);
+process.exit(results.filter(r => r.status === "fail").length);
