@@ -1,30 +1,29 @@
 "use strict";
 
-// TODO: automatic detection of c or cpp with defaults for both
+// TODO: concat all
 
 const isStartOfSnippet = (line) =>
-  line.trim().match(/```\W*(c|cpp|cc)\s?$/i);
+  line.trim().match(/```(?<lang>[a-zA-Z]+)$/i);
 const isEndOfSnippet = (line) => line.trim() === "```";
 
-function startNewSnippet(snippets, fileName, lineNumber) {
+const startNewSnippet = match =>
+function (snippets, fileName, lineNumber) {
   return Object.assign(snippets, {
     snippets: snippets.snippets.concat([
-      { code: "", fileName, lineNumber, complete: false }
+      { code: "", fileName, lineNumber, lang: match.groups['lang'], complete: false }
     ])
   });
 }
 
-function addLineToLastSnippet(line) {
-  return function addLine(snippets) {
-    const lastSnippet = snippets.snippets[snippets.snippets.length - 1];
+const addLineToLastSnippet = line => snippets => {
+  const lastSnippet = snippets.snippets[snippets.snippets.length - 1];
 
-    if (lastSnippet && !lastSnippet.complete) {
-      lastSnippet.code += line + "\n";
-    }
+  if (lastSnippet && !lastSnippet.complete) {
+    lastSnippet.code += line + "\n";
+  }
 
-    return snippets;
-  };
-}
+  return snippets;
+};
 
 function endSnippet(snippets, fileName, lineNumber) {
   const lastSnippet = snippets.snippets[snippets.snippets.length - 1];
@@ -37,8 +36,9 @@ function endSnippet(snippets, fileName, lineNumber) {
 }
 
 function parseLine(line) {
-  if (isStartOfSnippet(line)) {
-    return startNewSnippet;
+  const start = isStartOfSnippet(line);
+  if (start) {
+    return startNewSnippet(start);
   }
 
   if (isEndOfSnippet(line)) {
@@ -52,19 +52,12 @@ function parseCodeSnippets(args) {
   const contents = args.contents;
   const fileName = args.fileName;
 
-  const initialState = {
-    snippets: [],
-    complete: false
-  };
-
   const results = contents
     .split("\n")
     .map(parseLine)
     .reduce(
-      (snippets, lineAction, index) =>
-        lineAction(snippets, fileName, index + 1),
-      initialState
-    );
+      (snippets, lineAction, index) => lineAction(snippets, fileName, index + 1),
+      { snippets: [], complete: false });
 
   const codeSnippets = results.snippets;
 
@@ -74,10 +67,7 @@ function parseCodeSnippets(args) {
     throw new Error("Snippet parsing was incomplete");
   }
 
-  return {
-    fileName,
-    codeSnippets,
-  };
+  return { fileName, codeSnippets };
 }
 
 
@@ -97,7 +87,7 @@ function test(config, filename) {
     let success = false;
     let stack = "";
 
-    const codefile = tempfile() + ".cc";
+    const codefile = tempfile() + '.' + codeSnippet.lang;
     const binfile = tempfile();
 
     writeFileSync(codefile, codeSnippet.code);
