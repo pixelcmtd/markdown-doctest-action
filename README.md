@@ -13,8 +13,10 @@ Just `npm install markdown-doctest` and run `markdown-doctest`. It will run all 
 
 Let's try it on this repo!
 
-```cpp
-assert(1 + 1 == 2);
+```c
+main() {
+        assert(1 + 1 == 2);
+}
 ```
 
 There's a problem with that example. `markdown-doctest` finds it for us:

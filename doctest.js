@@ -1,57 +1,34 @@
 "use strict";
 
-const readFileSync = require("fs").readFileSync;
-const getInput = require("@actions/core").getInput;
-const parseCodeSnippets = require("./parse-code-snippets-from-markdown").parseCodeSnippets;
+const { readFileSync } = require("fs");
+const { execSync } = require("child_process");
+const { getInput } = require("@actions/core");
+const { parseCodeSnippets } = require("./parse-code-snippets-from-markdown");
 
 function flatten(arr) {
   return Array.prototype.concat.apply([], arr);
 }
 
-function runTests(files, config) {
-  const results = files
-    .map(read)
-    .map(parseCodeSnippets)
-    .map(testFile(config));
-
-  return flatten(results);
+function runTests(fileName, config) {
+  return flatten(testFile(config)(parseCodeSnippets({ contents: readFileSync(fileName, "utf8"), fileName })));
 }
 
-function read(fileName) {
-  return { contents: readFileSync(fileName, "utf8"), fileName };
-}
+const testFile = (config) => (args) => args.codeSnippets.map(test(config, args.fileName));
 
-function testFile(config) {
-  return function testFileWithConfig(args) {
-    const codeSnippets = args.codeSnippets;
-    const fileName = args.fileName;
-    const shareCodeInFile = args.shareCodeInFile;
-
-    return codeSnippets.map(test(config, fileName));
-  };
-}
+const tempfile = () => "/tmp/doctest" + Math.floor(Math.random() * (2 ** 36)).toString(36);
 
 function test(config, filename) {
   return (codeSnippet) => {
-    if (codeSnippet.skip) {
-      return { status: "skip", codeSnippet, stack: "" };
-    }
-
     let success = false;
     let stack = "";
 
     let code = codeSnippet.code;
-
-    if (config.beforeEach) {
-      config.beforeEach();
-    }
-
-    const options = {
-      presets: [presetEnv],
-    };
+    const codefile = tempfile() + ".cc";
+    const binfile = tempfile();
 
     try {
-
+      execSync(`${config.compiler} ${config.flags} ${codefile} -o ${binfile}`);
+      execSync(`${binfile}`);
       success = true;
     } catch (e) {
       stack = e.stack || "";
@@ -118,3 +95,5 @@ function markDownErrorLocation(result) {
 const file = getInput("file");
 const compiler = getInput("compiler");
 const flags = getInput("flags");
+
+runTests(file, {compiler, flags});
